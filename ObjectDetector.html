@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta content="IE=edge">
+  <meta content="width=device-width,initial-scale=1">
+  <meta content="description" name="description">
+  <meta name="google" content="notranslate" />
+
+  <meta name="msapplication-tap-highlight" content="no">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-icon-180x180.png">
+  <link href="./assets/favicon.ico" rel="icon">
+
+  <title>ObjectDetector</title>
+
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <!-- Coco SSD Object Detection Model -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+  <link href="./main.3f6952e4.css" rel="stylesheet">
+  
+  <style>
+    /* Webcam and Upload container styling */
+    #webcam-container, #upload-container {
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    /* Adjust frame size for webcam and uploaded image */
+    .frame {
+      width: 640px; /* Increase width */
+      height: 480px; /* Increase height */
+      border: 2px solid #333;
+      display: inline-block;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    /* Ensure the video fits perfectly within the frame */
+    #webcam {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Ensure the uploaded image fits perfectly within the frame */
+    #upload-preview {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* Center the entire container */
+    .center-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* Style for buttons */
+    button {
+      margin: 10px;
+    }
+
+    /* Style for file input */
+    #image-upload {
+      margin-top: 10px;
+    }
+
+    /* Style for bounding boxes */
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+
+<body class="">
+<div id="site-border-left"></div>
+<div id="site-border-right"></div>
+<div id="site-border-top"></div>
+<div id="site-border-bottom"></div>
+
+<header>
+  <nav class="navbar  navbar-fixed-top navbar-default">
+    <div class="container">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbar-collapse">
+        <ul class="nav navbar-nav ">
+          <li><a href="./index.html" title="">Home</a></li>
+          <li><a href="./ImageClassifier.html" title="">ImageClassifier</a></li>
+          <li><a href="./ObjectDetector.html" title="">ObjectDetector</a></li>
+          <li><a href="./ImageSegmenter.html" title="">ImageSegmenter</a></li>
+          <li><a href="./components.html" title="">ImageEmbedder</a></li>
+          <li><a href="./imageSearch.html" title="">ImageSearcher</a></li>
+          <li><a href="./aboutus.html" title="">About us</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<div class="section-container">
+  <div class="container center-container">
+    <div class="row">
+      <div class="col-sm-8 col-sm-offset-2 section-container-spacer">
+        <div class="text-center">
+          <h1 class="h2">Object Detector</h1>
+          <p>
+ObjectDetector คือโมดูลหรือเครื่องมือในระบบปัญญาประดิษฐ์ที่มีหน้าที่ตรวจจับวัตถุในภาพหรือวิดีโอ โดยทำการระบุตำแหน่งและคลาสของวัตถุเหล่านั้น มันจะส่งออกผลลัพธ์เป็นการแบ่งขอบเขตของวัตถุด้วยกล่อง (bounding box) และระบุประเภทของวัตถุที่พบในกล่องเหล่านั้น เช่น ตรวจจับว่ามีคน รถ หรือสัตว์อยู่ในภาพ โดยเทคโนโลยีนี้มีการนำไปใช้ในหลายๆ ด้าน เช่น ระบบรักษาความปลอดภัย, รถยนต์ขับเคลื่อนอัตโนมัติ, การวิเคราะห์ภาพถ่าย และการช่วยให้การค้าปลีกออนไลน์มีความแม่นยำในการวิเคราะห์ภาพสินค้า        </div>
+      </div>
+    </div>
+
+    <!-- Webcam Container -->
+    <div id="webcam-container">
+      <h3>Real-time Object Detection</h3>
+      <div class="frame">
+        <video id="webcam" autoplay></video>
+        <canvas id="canvas"></canvas> <!-- Canvas for drawing bounding boxes -->
+      </div>
+      <p id="webcam-prediction">Objects will be detected here...</p>
+      
+      <!-- Webcam control buttons -->
+      <button id="start-webcam">Start Webcam</button>
+      <button id="stop-webcam">Stop Webcam</button>
+    </div>
+
+    <!-- Image Upload Container (Centered) -->
+    <div id="upload-container">
+      <h3>Upload an Image for Object Detection</h3>
+      <div class="frame">
+        <img id="upload-preview" alt="Uploaded Image Preview">
+        <canvas id="canvas-upload"></canvas> <!-- Canvas for drawing bounding boxes -->
+      </div>
+      <input type="file" id="image-upload" accept="image/*">
+      <p id="upload-prediction">Objects will be detected here...</p>
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer-container text-center">
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-12">
+        <p>Website created by : Worawiwat Chaichuang , Rawinpat Boontanutsakul , Panupong Jantabootrah</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  let net;
+  let webcamStream;
+  let detectionInterval;
+
+  // Load the Coco SSD model
+  async function loadModel() {
+    net = await cocoSsd.load();
+    console.log("Coco SSD model loaded.");
+    document.getElementById('webcam-prediction').innerText = "Model loaded! Now you can start detecting objects.";
+  }
+
+  // Function to start the webcam and detect objects in real-time
+  async function startWebcam() {
+    const webcamElement = document.getElementById('webcam');
+    const canvasElement = document.getElementById('canvas');
+    const ctx = canvasElement.getContext('2d');
+    webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    webcamElement.srcObject = webcamStream;
+
+    webcamElement.addEventListener('loadeddata', () => {
+      // Set canvas size to match video size
+      canvasElement.width = webcamElement.videoWidth;
+      canvasElement.height = webcamElement.videoHeight;
+
+      detectionInterval = setInterval(async () => {
+        if (webcamStream) {
+          const predictions = await net.detect(webcamElement);
+          ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+          // Get the scale factors for the canvas and video to match sizes
+          const scaleX = canvasElement.width / webcamElement.videoWidth;
+          const scaleY = canvasElement.height / webcamElement.videoHeight;
+
+          predictions.forEach(prediction => {
+            const [x, y, width, height] = prediction.bbox;
+            
+            // Scale the bounding box based on canvas and video dimensions
+            const scaledX = x * scaleX;
+            const scaledY = y * scaleY;
+            const scaledWidth = width * scaleX;
+            const scaledHeight = height * scaleY;
+
+            ctx.strokeStyle = "#FF0000";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+            ctx.fillStyle = "#FF0000";
+            ctx.font = "18px Arial";
+            ctx.fillText(`${prediction.class} (${(prediction.score * 100).toFixed(2)}%)`, scaledX, scaledY > 10 ? scaledY - 5 : 10);
+          });
+        }
+      }, 1000);
+    });
+  }
+
+  // Function to stop the webcam and clear detection
+  function stopWebcam() {
+    const webcamElement = document.getElementById('webcam');
+    if (webcamStream) {
+      const tracks = webcamStream.getTracks();
+      tracks.forEach(track => track.stop()); // Stop all video streams
+      webcamElement.srcObject = null; // Clear the video element source
+
+      clearInterval(detectionInterval); // Clear the detection interval
+      detectionInterval = null;
+
+      const canvasElement = document.getElementById('canvas');
+      const ctx = canvasElement.getContext('2d');
+      ctx.clearRect(0, 0, canvasElement.width, canvasElement.height); // Clear the canvas
+      document.getElementById('webcam-prediction').innerText = "Webcam stopped.";
+    }
+  }
+
+  // Image Upload setup
+  document.getElementById('image-upload').addEventListener('change', async (event) => {
+    const image = document.getElementById('upload-preview');
+    const canvas = document.getElementById('canvas-upload');
+    const ctx = canvas.getContext('2d');
+
+    image.src = URL.createObjectURL(event.target.files[0]);
+
+    image.onload = async () => {
+      // Set canvas size to match image size
+      canvas.width = image.width;
+      canvas.height = image.height;
+
+      const predictions = await net.detect(image);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      predictions.forEach(prediction => {
+        const [x, y, width, height] = prediction.bbox;
+
+        // Scale bounding box for uploaded image
+        ctx.strokeStyle = "#FF0000";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, width, height);
+        ctx.fillStyle = "#FF0000";
+        ctx.font = "18px Arial";
+        ctx.fillText(`${prediction.class} (${(prediction.score * 100).toFixed(2)}%)`, x, y > 10 ? y - 5 : 10);
+      });
+    };
+  });
+
+  // Load the model when the page loads
+  loadModel();
+
+  // Event listeners for webcam control buttons
+  document.getElementById('start-webcam').addEventListener('click', startWebcam);
+  document.getElementById('stop-webcam').addEventListener('click', stopWebcam);
+
+</script>
+
+<script type="text/javascript" src="./main.70a66962.js"></script>
+</body>
+
+</html>

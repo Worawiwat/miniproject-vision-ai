@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta content="IE=edge" http-equiv="X-UA-Compatible">
+  <meta content="width=device-width,initial-scale=1" name="viewport">
+  <meta content="description" name="description">
+  <meta name="google" content="notranslate" />
+
+  <!-- Disable tap highlight on IE -->
+  <meta name="msapplication-tap-highlight" content="no">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-icon-180x180.png">
+  <link href="./assets/favicon.ico" rel="icon">
+
+  <title>Image Segmentation</title>
+
+  <!-- Include TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <!-- Include Google Task Library Image Segmenter -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+
+  <link href="./main.3f6952e4.css" rel="stylesheet">
+
+  <style>
+    .image-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    #uploadedImage,
+    #segmentedImage {
+      max-width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      border: 2px solid #000;
+      margin: 0 auto;
+      display: block;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+
+<body class="">
+  <div id="site-border-left"></div>
+  <div id="site-border-right"></div>
+  <div id="site-border-top"></div>
+  <div id="site-border-bottom"></div>
+
+  <!-- Add your content of header -->
+  <header>
+    <nav class="navbar  navbar-fixed-top navbar-default">
+      <div class="container">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse"
+          aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbar-collapse">
+          <ul class="nav navbar-nav ">
+            <li><a href="./index.html" title="">Home</a></li>
+            <li><a href="./ImageClassifier.html" title="">ImageClassifier</a></li>
+            <li><a href="./ObjectDetector.html" title="">ObjectDetector</a></li>
+            <li><a href="./ImageSegmenter.html" title="">ImageSegmenter</a></li>
+            <li><a href="./components.html" title="">ImageEmbedder</a></li>
+            <li><a href="./imageSearch.html" title="">ImageSearcher</a></li>
+            <li><a href="./aboutus.html" title="">About us</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Image Segmentation Section -->
+  <div class="section-container">
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-8 col-sm-offset-2 section-container-spacer">
+          <div class="text-center">
+            <h1 class="h2">Image Segmentation</h1>
+            <p>Upload an image to segment and analyze.</p>
+
+            <!-- Image Upload Input -->
+            <input type="file" id="imageUpload" accept="image/*" onchange="loadAndSegmentImage(event)">
+            
+            <!-- Display uploaded image -->
+            <h3>Uploaded Image</h3>
+            <div class="image-container">
+              <img id="uploadedImage" alt="Uploaded Image" style="display: none;">
+            </div>
+
+            <!-- Display segmented result -->
+            <h3>Segmented Result</h3>
+            <div class="image-container">
+              <canvas id="segmentedImage"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer-container text-center">
+    <div class="container">
+      <div class="row">
+        <div class="col-xs-12">
+          <p>Website created by : Worawiwat Chaichuang , Rawinpat Boontanutsakul , Panupong Jantabootrah</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let net;
+
+    // Load the BodyPix model
+    async function loadBodyPixModel() {
+      net = await bodyPix.load();
+      console.log("BodyPix model loaded.");
+    }
+
+    // Function to load and display the uploaded image, then segment it
+    async function loadAndSegmentImage(event) {
+      const image = document.getElementById('uploadedImage');
+      const canvas = document.getElementById('segmentedImage');
+      const ctx = canvas.getContext('2d');
+
+      const reader = new FileReader();
+      reader.onload = function() {
+        image.src = reader.result;
+        image.style.display = 'block';
+        image.onload = async function() {
+          // Set canvas dimensions to match uploaded image
+          canvas.width = image.width;
+          canvas.height = image.height;
+          
+          // Perform image segmentation using BodyPix
+          const segmentation = await net.segmentPerson(image);
+
+          // Use the segmentation data to mask the image
+          const mask = bodyPix.toMask(segmentation);
+          
+          // Clear the canvas
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Draw the uploaded image on the canvas
+          ctx.drawImage(image, 0, 0, image.width, image.height);
+          
+          // Apply the mask on the canvas
+          bodyPix.drawMask(canvas, image, mask, 1, 0, false);
+        };
+      };
+      reader.readAsDataURL(event.target.files[0]);
+    }
+
+    // Load BodyPix model on page load
+    window.onload = function() {
+      loadBodyPixModel();
+    };
+  </script>
+
+  <script type="text/javascript" src="./main.70a66962.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta content="IE=edge" http-equiv="X-UA-Compatible">
+  <meta content="width=device-width,initial-scale=1" name="viewport">
+  <meta content="description" name="description">
+  <meta name="google" content="notranslate" />
+
+  <meta name="msapplication-tap-highlight" content="no">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-icon-180x180.png">
+  <link href="./assets/favicon.ico" rel="icon">
+
+  <title>ImageClassifier</title>
+
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <!-- MobileNet Model -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+
+  <link href="./main.3f6952e4.css" rel="stylesheet">
+  
+  <style>
+    /* Webcam and Upload container styling */
+    #webcam-container, #upload-container {
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    /* Fixed frame for webcam and uploaded image */
+    .frame {
+      width: 400px;
+      height: 300px;
+      border: 2px solid #333;
+      display: inline-block;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    /* Ensure the video fits perfectly within the frame */
+    #webcam {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Ensure the uploaded image fits perfectly within the frame */
+    #upload-preview {
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* This will make the image fit inside the frame while maintaining its aspect ratio */
+    }
+
+    /* Center the entire container */
+    .center-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* Style for buttons */
+    button {
+      margin: 10px;
+    }
+
+    /* Style for file input */
+    #image-upload {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body class="">
+<div id="site-border-left"></div>
+<div id="site-border-right"></div>
+<div id="site-border-top"></div>
+<div id="site-border-bottom"></div>
+
+<header>
+  <nav class="navbar  navbar-fixed-top navbar-default">
+    <div class="container">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbar-collapse">
+        <ul class="nav navbar-nav ">
+          <li><a href="./index.html" title="">Home</a></li>
+          <li><a href="./ImageClassifier.html" title="">ImageClassifier</a></li>
+          <li><a href="./ObjectDetector.html" title="">ObjectDetector</a></li>
+          <li><a href="./ImageSegmenter.html" title="">ImageSegmenter</a></li>
+          <li><a href="./components.html" title="">ImageEmbedder</a></li>
+          <li><a href="./imageSearch.html" title="">ImageSearcher</a></li>
+          <li><a href="./aboutus.html" title="">About us</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<div class="section-container">
+  <div class="container center-container">
+    <div class="row">
+      <div class="col-sm-8 col-sm-offset-2 section-container-spacer">
+        <div class="text-center">
+          <h1 class="h2">ImageClassifier</h1>
+          <p>
+            Image Classifier คือระบบหรือโมเดลปัญญาประดิษฐ์ (AI) ที่ถูกฝึกให้สามารถจำแนกและจัดหมวดหมู่ภาพออกเป็นกลุ่มต่าง ๆ ตามที่ระบบได้รับการฝึก โดยหลักการพื้นฐานของ Image Classifier คือการนำภาพเข้ามาผ่านกระบวนการประมวลผลและเปรียบเทียบกับข้อมูลที่มีในโมเดลเพื่อให้สามารถระบุประเภทหรือหมวดหมู่ของภาพนั้นได้</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Webcam Container -->
+    <div id="webcam-container">
+      <h3>Real-time Image Classification</h3>
+      <div class="frame">
+        <video id="webcam" autoplay></video>
+      </div>
+      <p id="webcam-prediction">Prediction will appear here...</p>
+      
+      <!-- Webcam control buttons -->
+      <button id="start-webcam">Start Webcam</button>
+      <button id="stop-webcam">Stop Webcam</button>
+    </div>
+
+    <!-- Image Upload Container (Centered) -->
+    <div id="upload-container">
+      <h3>Upload an Image for Classification</h3>
+      <div class="frame">
+        <img id="upload-preview" alt="Uploaded Image Preview">
+      </div>
+      <input type="file" id="image-upload" accept="image/*">
+      <p id="upload-prediction">Prediction will appear here...</p>
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer-container text-center">
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-12">
+        <p>Website created by : Worawiwat Chaichuang , Rawinpat Boontanutsakul , Panupong Jantabootrah</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  let net;
+  let webcamStream;
+
+  // Load the MobileNet model
+  async function loadModel() {
+    net = await mobilenet.load();
+    console.log("MobileNet model loaded.");
+    document.getElementById('webcam-prediction').innerText = "Model loaded! Now you can start classifying images.";
+  }
+
+  // Function to start the webcam
+  async function startWebcam() {
+    const webcamElement = document.getElementById('webcam');
+    webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    webcamElement.srcObject = webcamStream;
+
+    // Run real-time classification on the webcam stream
+    webcamElement.addEventListener('loadeddata', () => {
+      setInterval(async () => {
+        if (webcamStream) {
+          const prediction = await net.classify(webcamElement);
+          document.getElementById('webcam-prediction').innerText = `Prediction: ${prediction[0].className}, Probability: ${prediction[0].probability.toFixed(2)}`;
+        }
+      }, 1000);
+    });
+  }
+
+  // Function to stop the webcam
+  function stopWebcam() {
+    const webcamElement = document.getElementById('webcam');
+    if (webcamStream) {
+      const tracks = webcamStream.getTracks();
+      tracks.forEach(track => track.stop()); // Stop all video streams
+      webcamElement.srcObject = null; // Clear the video element source
+      document.getElementById('webcam-prediction').innerText = "Webcam stopped.";
+    }
+  }
+
+  // Image Upload setup
+  document.getElementById('image-upload').addEventListener('change', async (event) => {
+    const image = document.getElementById('upload-preview');
+    image.src = URL.createObjectURL(event.target.files[0]);
+
+    image.onload = async () => {
+      const prediction = await net.classify(image);
+      document.getElementById('upload-prediction').innerText = `Prediction: ${prediction[0].className}, Probability: ${prediction[0].probability.toFixed(2)}`;
+    };
+  });
+
+  // Load the model when the page loads
+  loadModel();
+
+  // Event listeners for webcam control buttons
+  document.getElementById('start-webcam').addEventListener('click', startWebcam);
+  document.getElementById('stop-webcam').addEventListener('click', stopWebcam);
+
+</script>
+
+<script type="text/javascript" src="./main.70a66962.js"></script>
+</body>
+
+</html>
